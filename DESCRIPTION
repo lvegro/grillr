@@ -1,0 +1,25 @@
+Package: grillr
+Title: Parse and Extract Data from Excel Templates
+Version: 0.0.0.9000
+Authors@R:
+    person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
+Description: Reads Excel template files using 'tidyxl' and produces a
+    guide file where each occupied cell is replaced by a parsable tag
+    string encoding the cell's position, type, and content.  The guide
+    can then be used to drive downstream data extraction from files that
+    follow the same template layout.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    tidyxl (>= 1.0.8),
+    openxlsx (>= 4.2.5),
+    dplyr (>= 1.1.0),
+    stringr (>= 1.5.0),
+    rlang (>= 1.1.0)
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
