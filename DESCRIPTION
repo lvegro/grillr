@@ -1,0 +1,29 @@
+Package: grillr
+Title: Parse and Extract Data from Excel Templates Using Functional Tags
+Version: 0.0.0.9000
+Authors@R:
+    person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
+Description: Provides a workflow for extracting structured data from Excel
+    files that follow a fixed template layout.  The analyst creates a *guide*
+    workbook — a copy of the template where every cell carries a parsable tag
+    string encoding functional dimensions (e.g. metric, scenario, tenor).
+    grillr reads the guide to build a cell-to-dimensions mapping, applies that
+    mapping to the actual data file, and returns a long tidy dataset where each
+    observation is fully labelled.  An optional YAML sidecar file holds
+    template-level metadata such as reference date or reporting entity.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    tidyxl (>= 1.0.8),
+    openxlsx (>= 4.2.5),
+    dplyr (>= 1.1.0),
+    rlang (>= 1.1.0),
+    yaml (>= 2.3.0),
+    tools
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3

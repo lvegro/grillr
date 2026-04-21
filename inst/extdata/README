@@ -1,0 +1,5 @@
+example_template.xlsx
+=====================
+A minimal Excel workbook used by the package tests and vignettes.
+
+Run `data-raw/create_example_template.R` to regenerate it.

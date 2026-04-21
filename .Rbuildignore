@@ -1,0 +1,7 @@
+^\.git$
+^\.gitignore$
+^README\.md$
+^\.Rbuildignore$
+^.*\.Rproj$
+^\.Rproj\.user$
+^tests/testthat/_snaps$

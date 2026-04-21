@@ -1,0 +1,24 @@
+# grillr metadata — example template
+# Pass to read_metadata() and supply the result to parse_guide() and extract_data().
+
+# ── Template metadata ─────────────────────────────────────────────────────────
+reference_date: "2025-12-31"
+entity: "Example Bank"
+template_version: "1.0"
+currency: "EUR"
+
+# ── Dimension schema ──────────────────────────────────────────────────────────
+# Defines the expected tag dimensions, their canonical order, and constraints.
+# parse_guide(metadata = meta) uses this to:
+#   - order dimension columns in the output
+#   - warn when a required dimension is missing from the guide
+#   - warn when a dimension appears in the guide but is not listed here
+#   - warn when a cell value falls outside an `allowed` list
+dimensions:
+  - name: metric
+    required: true
+  - name: scenario
+    required: true
+    allowed: [base, stressed, adverse]
+  - name: tenor
+    required: false
