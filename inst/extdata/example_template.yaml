@@ -1,0 +1,7 @@
+# grillr metadata — example template
+# Pass to read_metadata() and supply the result to extract_data(metadata = ...).
+
+reference_date: "2025-12-31"
+entity: "Example Bank"
+template_version: "1.0"
+currency: "EUR"

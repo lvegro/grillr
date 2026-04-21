@@ -1,84 +1,84 @@
 # Tag format:
-#   [[grillr|key=value;key=value;...]]
+#   [[grillr|key1=val1;key2=val2;...]]
 #
-# Mandatory keys (always present, in this order):
-#   sheet, address, row, col, type, value
+# Keys are user-defined functional/semantic dimensions, e.g.
+#   metric=regulatory_capital;scenario=stressed;tenor=t+3
 #
-# `value` is always stored as a string; NA is encoded as the literal "NA".
+# Cell position is NOT stored inside the tag — it is derived from where
+# the tag string sits in the guide workbook.
 
 TAG_PREFIX <- "[[grillr|"
 TAG_SUFFIX <- "]]"
 TAG_SEP    <- ";"
 KV_SEP     <- "="
 
-#' Build a grillr tag string from cell metadata
+
+#' Build a grillr tag string from named functional dimensions
 #'
-#' @param sheet  Sheet name (character scalar).
-#' @param address Cell address, e.g. `"B3"` (character scalar).
-#' @param row    Row index (integer).
-#' @param col    Column index (integer).
-#' @param type   Data type label: `"character"`, `"numeric"`, `"logical"`,
-#'   `"date"`, or `"error"`.
-#' @param value  Cell value coerced to character, or `NA`.
+#' @param ... Named character scalars describing the data at a cell, e.g.
+#'   `metric = "regulatory_capital"`, `scenario = "stressed"`,
+#'   `tenor = "t+3"`.  All arguments must be named and character.
 #'
-#' @return A single character string.
+#' @return A single character tag string.
 #' @export
 #'
 #' @examples
-#' make_tag("Sheet1", "B3", 3L, 2L, "numeric", "42")
-make_tag <- function(sheet, address, row, col, type, value) {
-  value_str <- if (is.na(value)) "NA" else as.character(value)
+#' make_tag(metric = "regulatory_capital", scenario = "stressed", tenor = "t+3")
+#' make_tag(item = "total_rwa")
+make_tag <- function(...) {
+  dims <- list(...)
+  if (length(dims) == 0L) {
+    return(paste0(TAG_PREFIX, TAG_SUFFIX))
+  }
 
-  # Escape any embedded TAG_SEP or KV_SEP inside values to keep the format
-  # unambiguous.  We use URL-style percent-encoding for the two reserved chars.
-  value_str <- gsub(KV_SEP, "%3D", value_str, fixed = TRUE)
-  value_str <- gsub(TAG_SEP, "%3B", value_str, fixed = TRUE)
+  nms <- names(dims)
+  if (is.null(nms) || any(nms == "")) {
+    rlang::abort("All arguments to make_tag() must be named.", call = NULL)
+  }
 
-  pairs <- paste(
-    c("sheet", "address", "row", "col", "type", "value"),
-    c(sheet, address, as.integer(row), as.integer(col), type, value_str),
-    sep = KV_SEP
-  )
+  vals <- vapply(dims, function(v) {
+    v <- as.character(v)
+    v <- gsub(KV_SEP, "%3D", v, fixed = TRUE)
+    v <- gsub(TAG_SEP, "%3B", v, fixed = TRUE)
+    v
+  }, character(1L))
 
+  pairs <- paste(nms, vals, sep = KV_SEP)
   paste0(TAG_PREFIX, paste(pairs, collapse = TAG_SEP), TAG_SUFFIX)
 }
 
 
-#' Parse a grillr tag string back into its components
+#' Parse a grillr tag string into its named dimensions
 #'
-#' @param tag A character scalar produced by [make_tag()].
+#' @param tag A character scalar produced by [make_tag()] or authored
+#'   manually in a guide workbook.
 #'
-#' @return A named list with elements `sheet`, `address`, `row` (integer),
-#'   `col` (integer), `type`, and `value` (character, or `NA`).
+#' @return A named list of character scalars, one element per dimension.
+#'   An empty tag (`[[grillr|]]`) returns an empty list.
 #' @export
 #'
 #' @examples
-#' tag <- make_tag("Sheet1", "B3", 3L, 2L, "numeric", "42")
+#' tag <- make_tag(metric = "regulatory_capital", scenario = "stressed")
 #' parse_tag(tag)
 parse_tag <- function(tag) {
   if (!is_grillr_tag(tag)) {
-    rlang::abort(
-      paste0("Not a valid grillr tag: ", tag),
-      call = NULL
-    )
+    rlang::abort(paste0("Not a valid grillr tag: ", tag), call = NULL)
   }
 
   inner <- substr(tag, nchar(TAG_PREFIX) + 1L, nchar(tag) - nchar(TAG_SUFFIX))
+  if (nchar(trimws(inner)) == 0L) return(list())
+
   pairs <- strsplit(inner, TAG_SEP, fixed = TRUE)[[1L]]
 
   result <- list()
   for (pair in pairs) {
-    kv    <- strsplit(pair, KV_SEP, fixed = TRUE)[[1L]]
-    key   <- kv[[1L]]
-    value <- paste(kv[-1L], collapse = KV_SEP)  # re-join if value had KV_SEP
-    value <- gsub("%3B", TAG_SEP, value, fixed = TRUE)
-    value <- gsub("%3D", KV_SEP,  value, fixed = TRUE)
-    result[[key]] <- value
+    sep_pos <- regexpr(KV_SEP, pair, fixed = TRUE)[[1L]]
+    key     <- substr(pair, 1L, sep_pos - 1L)
+    val     <- substr(pair, sep_pos + 1L, nchar(pair))
+    val     <- gsub("%3B", TAG_SEP, val, fixed = TRUE)
+    val     <- gsub("%3D", KV_SEP,  val, fixed = TRUE)
+    result[[key]] <- val
   }
-
-  result$row <- as.integer(result$row)
-  result$col <- as.integer(result$col)
-  if (identical(result$value, "NA")) result$value <- NA_character_
 
   result
 }
@@ -92,6 +92,7 @@ parse_tag <- function(tag) {
 is_grillr_tag <- function(x) {
   is.character(x) &&
     length(x) == 1L &&
+    !is.na(x) &&
     startsWith(x, TAG_PREFIX) &&
     endsWith(x, TAG_SUFFIX)
 }

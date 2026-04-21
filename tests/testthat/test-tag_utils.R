@@ -1,47 +1,52 @@
 test_that("make_tag produces the expected format", {
-  tag <- make_tag("Sheet1", "B3", 3L, 2L, "numeric", "42")
+  tag <- make_tag(metric = "regulatory_capital", scenario = "stressed", tenor = "t+3")
   expect_true(startsWith(tag, "[[grillr|"))
   expect_true(endsWith(tag, "]]"))
-  expect_match(tag, "sheet=Sheet1")
-  expect_match(tag, "address=B3")
-  expect_match(tag, "row=3")
-  expect_match(tag, "col=2")
-  expect_match(tag, "type=numeric")
-  expect_match(tag, "value=42")
+  expect_match(tag, "metric=regulatory_capital")
+  expect_match(tag, "scenario=stressed")
+  expect_match(tag, "tenor=t\\+3")
+})
+
+test_that("make_tag with no args returns empty tag", {
+  tag <- make_tag()
+  expect_equal(tag, "[[grillr|]]")
+  expect_true(grillr:::is_grillr_tag(tag))
 })
 
 test_that("parse_tag round-trips make_tag", {
-  tag    <- make_tag("Data", "A1", 1L, 1L, "character", "Hello world")
+  tag    <- make_tag(metric = "rwa", scenario = "base", currency = "EUR")
   result <- parse_tag(tag)
-
-  expect_equal(result$sheet,   "Data")
-  expect_equal(result$address, "A1")
-  expect_equal(result$row,     1L)
-  expect_equal(result$col,     1L)
-  expect_equal(result$type,    "character")
-  expect_equal(result$value,   "Hello world")
+  expect_equal(result$metric,   "rwa")
+  expect_equal(result$scenario, "base")
+  expect_equal(result$currency, "EUR")
 })
 
-test_that("NA value is encoded and decoded correctly", {
-  tag    <- make_tag("Sheet1", "C5", 5L, 3L, "blank", NA)
-  result <- parse_tag(tag)
-  expect_true(is.na(result$value))
+test_that("parse_tag returns empty list for empty tag", {
+  result <- parse_tag("[[grillr|]]")
+  expect_equal(length(result), 0L)
 })
 
 test_that("values containing reserved characters round-trip cleanly", {
   tricky <- "key=val;another=pair"
-  tag    <- make_tag("S", "D4", 4L, 4L, "character", tricky)
+  tag    <- make_tag(label = tricky)
   result <- parse_tag(tag)
-  expect_equal(result$value, tricky)
+  expect_equal(result$label, tricky)
+})
+
+test_that("make_tag errors on unnamed arguments", {
+  expect_error(make_tag("unnamed"), "must be named")
 })
 
 test_that("parse_tag errors on non-tag input", {
-  expect_error(parse_tag("not a tag"), "Not a valid grillr tag")
+  expect_error(parse_tag("not a tag"),     "Not a valid grillr tag")
   expect_error(parse_tag("[[grillr|broken"), "Not a valid grillr tag")
+  expect_error(parse_tag(NA_character_),   "Not a valid grillr tag")
 })
 
 test_that("is_grillr_tag detects tags correctly", {
-  expect_true(grillr:::is_grillr_tag(make_tag("S", "A1", 1, 1, "numeric", "1")))
+  expect_true( grillr:::is_grillr_tag(make_tag(x = "1")))
+  expect_true( grillr:::is_grillr_tag("[[grillr|]]"))
   expect_false(grillr:::is_grillr_tag("plain text"))
   expect_false(grillr:::is_grillr_tag(NA_character_))
+  expect_false(grillr:::is_grillr_tag(1L))
 })

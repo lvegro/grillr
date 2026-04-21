@@ -1,23 +1,43 @@
-#' grillr: Parse and Extract Data from Excel Templates
+#' grillr: Parse and Extract Data from Excel Templates Using Functional Tags
 #'
-#' grillr reads an Excel template file with [tidyxl::xlsx_cells()] and
-#' produces a *guide* file — a copy of the workbook where every occupied cell
-#' is replaced by a parsable tag string that encodes the cell's sheet, address,
-#' data type, and original value.  Downstream code can use the guide to locate
-#' and extract matching data from files that share the same layout.
+#' grillr implements a guide-based workflow for extracting structured,
+#' labelled data from Excel files that follow a fixed template layout.
 #'
-#' ## Core workflow
+#' ## Workflow
 #'
+#' ### 1. Create a guide skeleton
 #' ```r
-#' # 1. Parse the raw cells from the template
-#' cells <- parse_template("template.xlsx")
-#'
-#' # 2. Write a guide workbook with tag strings in each cell
-#' build_guide(cells, "guide.xlsx")
-#'
-#' # 3. Read a tag back into its components
-#' parse_tag("[[grillr|sheet=Sheet1;address=B3;row=3;col=2;type=numeric;value=42]]")
+#' create_guide_skeleton("template.xlsx", "guide.xlsx")
 #' ```
+#' Opens as an Excel workbook where every occupied cell contains an empty
+#' tag placeholder `[[grillr|]]`.  A hidden `_grillr_ref` sheet shows the
+#' original cell values for reference.
+#'
+#' ### 2. Fill in the guide (manually)
+#' Open `guide.xlsx` and replace each `[[grillr|]]` with a tag that
+#' describes the data at that position in functional terms:
+#' ```
+#' [[grillr|metric=regulatory_capital;scenario=stressed;tenor=t+3]]
+#' ```
+#' Keys are free-form — define whatever dimensions make sense for your
+#' template (metric, scenario, tenor, currency, entity, …).
+#'
+#' ### 3. Parse the guide
+#' ```r
+#' guide <- parse_guide("guide.xlsx")
+#' # sheet | address | row | col | tag_raw | metric | scenario | tenor
+#' ```
+#'
+#' ### 4. Extract data from actual files
+#' ```r
+#' meta   <- read_metadata("template.yaml")   # optional
+#' result <- extract_data("q1_data.xlsx", guide, metadata = meta)
+#' # sheet | address | row | col | value | metric | scenario | tenor | reference_date | …
+#' ```
+#'
+#' The result is a long tidy dataset: one row per tagged cell, with the
+#' observed value and all dimensions as columns.  Split the `tag_raw`
+#' column or filter on dimension columns to subset the data as needed.
 #'
 #' @keywords internal
 "_PACKAGE"
